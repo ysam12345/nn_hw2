@@ -8,7 +8,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 from tkinter.filedialog import askopenfilename
 import pandas as pd
-from neural import Neural
+from mlp import MLP
 
 
 class Application(tk.Frame):
@@ -20,7 +20,7 @@ class Application(tk.Frame):
     
     def create_widgets(self):
 
-        self.winfo_toplevel().title("Yochien NN HW1")
+        self.winfo_toplevel().title("Yochien NN HW2")
 
         # 設定訓練循環次數
         self.learning_rate_label = tk.Label(self)
@@ -47,83 +47,115 @@ class Application(tk.Frame):
         self.early_stop_spinbox = tk.Spinbox(self, from_=1, to=100)
         self.early_stop_spinbox.grid(row=2, column=1, sticky=tk.N+tk.W)
 
+        # 設定隱藏層層數
+        self.hidden_layer_num_label = tk.Label(self)
+        self.hidden_layer_num_label["text"] = "隱藏層層數"
+        self.hidden_layer_num_label.grid(row=3, column=0, sticky=tk.N+tk.W)
+
+        self.hidden_layer_num_spinbox = tk.Spinbox(self, from_=1, to=100)
+        self.hidden_layer_num_spinbox.grid(row=3, column=1, sticky=tk.N+tk.W)
+
+        # 設定隱藏層神經元數量
+        self.hidden_layer_neural_num_label = tk.Label(self)
+        self.hidden_layer_neural_num_label["text"] = "隱藏層神經元數量"
+        self.hidden_layer_neural_num_label.grid(row=4, column=0, sticky=tk.N+tk.W)
+
+        self.hidden_layer_neural_num_spinbox = tk.Spinbox(self, from_=1, to=100)
+        self.hidden_layer_neural_num_spinbox.grid(row=4, column=1, sticky=tk.N+tk.W)
+
+    
         # 選取資料集檔案
         self.load_data_label = tk.Label(self)
         self.load_data_label["text"] = "載入資料集"
-        self.load_data_label.grid(row=3, column=0, sticky=tk.N+tk.W)
+        self.load_data_label.grid(row=5, column=0, sticky=tk.N+tk.W)
 
         self.load_data_button = tk.Button(self)
         self.load_data_button["text"] = "選取檔案"
-        self.load_data_button.grid(row=3, column=1, sticky=tk.N+tk.W)
+        self.load_data_button.grid(row=5, column=1, sticky=tk.N+tk.W)
         self.load_data_button["command"] = self.select_file
 
         self.file_path_label = tk.Label(self)
         self.file_path_label["text"] = ""
-        self.file_path_label.grid(row=3, column=2, sticky=tk.N+tk.W)
+        self.file_path_label.grid(row=5, column=2, sticky=tk.N+tk.W)
 
         # run run
         self.run_label = tk.Label(self)
         self.run_label["text"] = "進行訓練及測試"
-        self.run_label.grid(row=4, column=0, sticky=tk.N+tk.W)
+        self.run_label.grid(row=6, column=0, sticky=tk.N+tk.W)
 
         self.run_button = tk.Button(self)
         self.run_button["text"] = "Run"
-        self.run_button.grid(row=4, column=1, sticky=tk.N+tk.W)
+        self.run_button.grid(row=6, column=1, sticky=tk.N+tk.W)
         self.run_button["command"] = self.run
 
+        # 切換圖表顯示(原始資料/預測結果)
+        self.run_label = tk.Label(self)
+        self.run_label["text"] = "切換圖表顯示(原始資料/預測結果)"
+        self.run_label.grid(row=7, column=0, sticky=tk.N+tk.W)
+
+        self.run_button = tk.Button(self)
+        self.run_button["text"] = "切換"
+        self.run_button.grid(row=7, column=1, sticky=tk.N+tk.W)
+        self.run_button["command"] = self.run
+
+        self.file_path_label = tk.Label(self)
+        self.file_path_label["text"] = ""
+        self.file_path_label.grid(row=7, column=2, sticky=tk.N+tk.W)
 
         # 設定訓練圖表
         self.training_acc_figure = Figure(figsize=(4,4), dpi=100)
         self.training_acc_canvas = FigureCanvasTkAgg(self.training_acc_figure, self)
         self.training_acc_canvas.draw()
-        self.training_acc_canvas.get_tk_widget().grid(row=5, column=0, columnspan=3)
+        self.training_acc_canvas.get_tk_widget().grid(row=8, column=0, columnspan=3)
 
         self.training_data_figure = Figure(figsize=(4,4), dpi=100)
         self.training_data_canvas = FigureCanvasTkAgg(self.training_data_figure, self)
         self.training_data_canvas.draw()
-        self.training_data_canvas.get_tk_widget().grid(row=5, column=4, columnspan=3)
+        self.training_data_canvas.get_tk_widget().grid(row=8, column=4, columnspan=3)
 
         # 相關結果文字
         self.training_epoch_label = tk.Label(self)
         self.training_epoch_label["text"] = "實際訓練次數(Epoch)"
-        self.training_epoch_label.grid(row=6, column=0, sticky=tk.N+tk.W)
+        self.training_epoch_label.grid(row=9, column=0, sticky=tk.N+tk.W)
 
         self.training_epoch_text_label = tk.Label(self)
         self.training_epoch_text_label["text"] = ""
-        self.training_epoch_text_label.grid(row=6, column=1, sticky=tk.N+tk.W)
+        self.training_epoch_text_label.grid(row=9, column=1, sticky=tk.N+tk.W)
 
         self.training_acc_label = tk.Label(self)
         self.training_acc_label["text"] = "訓練辨識率(%)"
-        self.training_acc_label.grid(row=7, column=0, sticky=tk.N+tk.W)
+        self.training_acc_label.grid(row=10, column=0, sticky=tk.N+tk.W)
 
         self.training_acc_text_label = tk.Label(self)
         self.training_acc_text_label["text"] = ""
-        self.training_acc_text_label.grid(row=7, column=1, sticky=tk.N+tk.W)
+        self.training_acc_text_label.grid(row=10, column=1, sticky=tk.N+tk.W)
 
         self.testing_acc_label = tk.Label(self)
         self.testing_acc_label["text"] = "測試辨識率(%)"
-        self.testing_acc_label.grid(row=8, column=0, sticky=tk.N+tk.W)
+        self.testing_acc_label.grid(row=11, column=0, sticky=tk.N+tk.W)
 
         self.testing_acc_text_label = tk.Label(self)
         self.testing_acc_text_label["text"] = ""
-        self.testing_acc_text_label.grid(row=8, column=1, sticky=tk.N+tk.W)
+        self.testing_acc_text_label.grid(row=11, column=1, sticky=tk.N+tk.W)
 
-        self.weight_label = tk.Label(self)
-        self.weight_label["text"] = "當前鍵結值"
-        self.weight_label.grid(row=9, column=0, sticky=tk.N+tk.W)
+        self.hidden_layer_weight_label = tk.Label(self)
+        self.hidden_layer_weight_label["text"] = "隱藏層鍵結值"
+        self.hidden_layer_weight_label.grid(row=12, column=0, sticky=tk.N+tk.W)
 
-        self.weight_text = tk.Text(self)
-        self.weight_text["height"] = 5
-        self.weight_text["width"] = 40
-        self.weight_text.grid(row=9, column=1, sticky=tk.N+tk.W)
+        self.hidden_layer_weight_text = tk.Text(self)
+        self.hidden_layer_weight_text["height"] = 5
+        self.hidden_layer_weight_text["width"] = 40
+        self.hidden_layer_weight_text.grid(row=12, column=1, sticky=tk.N+tk.W)
 
-        self.bias_label = tk.Label(self)
-        self.bias_label["text"] = "當前偏差(Bias)"
-        self.bias_label.grid(row=10, column=0, sticky=tk.N+tk.W)
+        self.output_layer_weight_label = tk.Label(self)
+        self.output_layer_weight_label["text"] = "輸出層鍵結值"
+        self.output_layer_weight_label.grid(row=13, column=0, sticky=tk.N+tk.W)
 
-        self.bias_text_label = tk.Label(self)
-        self.bias_text_label["text"] = ""
-        self.bias_text_label.grid(row=10, column=1, sticky=tk.N+tk.W)
+        self.output_layer_weight_text = tk.Text(self)
+        self.output_layer_weight_text["height"] = 5
+        self.output_layer_weight_text["width"] = 40
+        self.output_layer_weight_text.grid(row=13, column=1, sticky=tk.N+tk.W)
+
 
     def draw_training_acc_figure(self, train_result_list):
         #清空影像
@@ -169,6 +201,7 @@ class Application(tk.Frame):
         ymax = self.training_data_figure.a.get_ylim()[1]
 
         # 感知機一次方程式
+        '''
         wx = float(last_train_result["weight"][0])
         wy = float(last_train_result["weight"][1])
         bias = float(last_train_result["bias"])
@@ -177,6 +210,7 @@ class Application(tk.Frame):
 
         # draw 感知機一次方程式(form -100~100)
         self.training_data_figure.a.plot(result_x, result_y)    
+        '''
         
         # draw 還原全部資料集的畫布範圍
         self.training_data_figure.a.set_xlim([xmin,xmax])
@@ -202,17 +236,18 @@ class Application(tk.Frame):
             return
         df = pd.read_table(filename, sep=" ", header=None)
 
-        # 檢查是否二類問題
-        df_label = np.split(df, [len(df.columns)-1], axis=1)[1]
-        if(len(df_label.groupby(len(df.columns)-1).groups) != 2):
-            print("非二類問題")
-            tk.messagebox.showinfo("Error","資料集非二類問題")
-            return 
-            # 非二類問題
-        # label非0/1組合 改變label-> 0~1
-        if (0 not in df_label.groupby(len(df.columns)-1).groups) or (1 not in df_label.groupby(len(df.columns)-1).groups):
-            df[len(df.columns)-1] = df[len(df.columns)-1] % 2
-       
+        # 計算label數量
+        label_df = np.split(df, [len(df.columns)-1], axis=1)[1].values.reshape(-1,).tolist()
+        label_set = set(label_df)
+        category_num = len(label_set)
+        # 改變label至[0, 1]範圍
+        category_list = np.arange(0, 1, 1/(category_num - 1) ).tolist()
+        category_list.append(1.0)
+        i = 0
+        for origin_label in label_set:
+            df.loc[df[len(df.columns)-1] == origin_label ,len(df.columns)-1] = category_list[i]
+            i += 1
+        print(df)
         # split traning data and testing data
         train_df=df.sample(frac=0.666666)
         test_df=df.drop(train_df.index)
@@ -231,23 +266,27 @@ class Application(tk.Frame):
 
         #learning_rate = 0.8
         learning_rate = self.learning_rate.get()
+        hidden_layer_num = int(self.hidden_layer_num_spinbox.get())
+        hidden_layer_neural_num = int(self.hidden_layer_neural_num_spinbox.get())
 
         # run training and show result
-        n = Neural(train_X, train_y, learning_rate)
+        n = MLP(train_X, train_y, learning_rate, category_num, hidden_layer_num, hidden_layer_neural_num)
         train_result_list = []
         print("### training start ###")
         for i in range(int(self.epoch_spinbox.get())):
             self.training_epoch_text_label["text"] = i + 1
             train_result = n.train()
             train_result_list.append(train_result)
+            #self.draw_training_data_figure(df, test_df, train_result_list[len(train_result_list)-1])
             if train_result["acc"] > float(self.early_stop_spinbox.get()):
                 break
         print("### training end ###")
         self.draw_training_acc_figure(train_result_list)
         self.training_acc_text_label["text"] = train_result_list[len(train_result_list)-1]["acc"]
-        self.bias_text_label["text"] = train_result_list[len(train_result_list)-1]["bias"]
-        self.weight_text.delete(1.0, END) 
-        self.weight_text.insert(1.0, train_result_list[len(train_result_list)-1]["weight"]) 
+        self.hidden_layer_weight_text.delete(1.0, END) 
+        self.hidden_layer_weight_text.insert(1.0, train_result_list[len(train_result_list)-1]["weight"]["hidden_layer_weight"]) 
+        self.output_layer_weight_text.delete(1.0, END) 
+        self.output_layer_weight_text.insert(1.0, train_result_list[len(train_result_list)-1]["weight"]["output_layer_weight"]) 
         
         # run testing and show result
         print("### predict start ###")
