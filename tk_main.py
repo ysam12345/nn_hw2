@@ -17,7 +17,9 @@ class Application(tk.Frame):
         self.root = master
         self.grid()
         self.create_widgets()
-    
+        self.draw_original_figure = True
+        self.number_classify_data_index = 0
+
     def create_widgets(self):
 
         self.winfo_toplevel().title("Yochien NN HW2")
@@ -89,18 +91,18 @@ class Application(tk.Frame):
         self.run_button["command"] = self.run
 
         # 切換圖表顯示(原始資料/預測結果)
-        self.run_label = tk.Label(self)
-        self.run_label["text"] = "切換圖表顯示(原始資料/預測結果)"
-        self.run_label.grid(row=7, column=0, sticky=tk.N+tk.W)
+        self.change_training_data_figure_label = tk.Label(self)
+        self.change_training_data_figure_label["text"] = "切換圖表顯示(原始資料/預測結果)"
+        self.change_training_data_figure_label.grid(row=7, column=0, sticky=tk.N+tk.W)
 
-        self.run_button = tk.Button(self)
-        self.run_button["text"] = "切換"
-        self.run_button.grid(row=7, column=1, sticky=tk.N+tk.W)
-        self.run_button["command"] = self.run
+        self.change_training_data_figure_button = tk.Button(self)
+        self.change_training_data_figure_button["text"] = "切換"
+        self.change_training_data_figure_button.grid(row=7, column=1, sticky=tk.N+tk.W)
+        self.change_training_data_figure_button["command"] = self.change_training_data_figure
 
-        self.file_path_label = tk.Label(self)
-        self.file_path_label["text"] = ""
-        self.file_path_label.grid(row=7, column=2, sticky=tk.N+tk.W)
+        self.training_data_figure_type_label = tk.Label(self)
+        self.training_data_figure_type_label["text"] = "Original"
+        self.training_data_figure_type_label.grid(row=7, column=2, sticky=tk.N+tk.W)
 
         # 設定訓練圖表
         self.training_acc_figure = Figure(figsize=(4,4), dpi=100)
@@ -156,6 +158,18 @@ class Application(tk.Frame):
         self.output_layer_weight_text["width"] = 40
         self.output_layer_weight_text.grid(row=13, column=1, sticky=tk.N+tk.W)
 
+        self.number_classify_label = tk.Label(self)
+        self.number_classify_label["text"] = "數字辨識結果"
+        self.number_classify_label.grid(row=14, column=0, sticky=tk.N+tk.W)
+
+        self.number_classify_data_label = tk.Label(self)
+        self.number_classify_data_label["text"] = ""
+        self.number_classify_data_label.grid(row=14, column=1, sticky=tk.N+tk.W)
+
+        self.change_number_classify_data_button = tk.Button(self)
+        self.change_number_classify_data_button["text"] = "切換數字辨識資料"
+        self.change_number_classify_data_button.grid(row=14, column=2, sticky=tk.N+tk.W)
+        self.change_number_classify_data_button["command"] = self.change_number_classify_data
 
     def draw_training_acc_figure(self, train_result_list):
         #清空影像
@@ -172,7 +186,7 @@ class Application(tk.Frame):
         self.training_acc_canvas.draw()
 
 
-    def draw_training_data_figure(self, dataset, testing_dataset, last_train_result):
+    def draw_original_training_data_figure(self, dataset, testing_dataset):
         # 清空影像
         self.training_data_figure.clf()
         self.training_data_figure.a = self.training_data_figure.add_subplot(111)
@@ -194,31 +208,66 @@ class Application(tk.Frame):
         # draw 測試資料的點位
         self.training_data_figure.a.plot(X_test, y_test, 'wx')
 
-        # 保存全部資料集的畫布範圍
-        xmin = self.training_data_figure.a.get_xlim()[0]
-        xmax = self.training_data_figure.a.get_xlim()[1]
-        ymin = self.training_data_figure.a.get_ylim()[0]
-        ymax = self.training_data_figure.a.get_ylim()[1]
-
-        # 感知機一次方程式
-        '''
-        wx = float(last_train_result["weight"][0])
-        wy = float(last_train_result["weight"][1])
-        bias = float(last_train_result["bias"])
-        result_x = np.linspace(-100, 100, 100)  
-        result_y = - (result_x * wx  - bias) / wy         
-
-        # draw 感知機一次方程式(form -100~100)
-        self.training_data_figure.a.plot(result_x, result_y)    
-        '''
-        
-        # draw 還原全部資料集的畫布範圍
-        self.training_data_figure.a.set_xlim([xmin,xmax])
-        self.training_data_figure.a.set_ylim([ymin,ymax])
-
-        self.training_data_figure.a.set_title('Traing Data')
+        self.training_data_figure.a.set_title('Traing Data(Original)')
         self.training_data_canvas.draw()
-          
+
+    def draw_predict_training_data_figure(self, predict_result, testing_dataset):
+        # 清空影像
+        self.training_data_figure.clf()
+        self.training_data_figure.a = self.training_data_figure.add_subplot(111)
+
+        dataset = pd.DataFrame()
+        for output in predict_result["output_list"]:
+            d = output["input"]
+            d.append(output["predict"])
+            dataset = dataset.append([d])
+
+        label_df = np.split(dataset, [len(dataset.columns)-1], axis=1)[1].values.reshape(-1,).tolist()
+        label_list = list(set(label_df))
+
+        # 產生全部資料 X,y list
+        X_0 = dataset[dataset[len(dataset.columns)-1]==label_list[0]][0].values.reshape(-1,).tolist()
+        y_0 = dataset[dataset[len(dataset.columns)-1]==label_list[0]][1].values.reshape(-1,).tolist()
+        X_1 = dataset[dataset[len(dataset.columns)-1]==label_list[1]][0].values.reshape(-1,).tolist()
+        y_1 = dataset[dataset[len(dataset.columns)-1]==label_list[1]][1].values.reshape(-1,).tolist()
+        
+        # draw 全部資料集兩種分類資料的點位
+        self.training_data_figure.a.plot(X_0, y_0, 'co')
+        self.training_data_figure.a.plot(X_1, y_1, 'go')
+
+        # 產生測試資料資料 X,y list
+        X_test = testing_dataset[0].values.reshape(-1,).tolist()
+        y_test = testing_dataset[1].values.reshape(-1,).tolist()
+
+        # draw 測試資料的點位
+        self.training_data_figure.a.plot(X_test, y_test, 'wx')
+
+        self.training_data_figure.a.set_title('Traing Data(Predict)')
+        self.training_data_canvas.draw()
+
+    def change_training_data_figure(self):
+        print(self.draw_original_figure)
+        if self.draw_original_figure == True:
+            self.draw_original_figure = False
+            self.training_data_figure_type_label["text"] = "Predict"
+            self.draw_predict_training_data_figure(self.predict_result, self.test_df)
+        else:
+            self.draw_original_figure = True
+            self.training_data_figure_type_label["text"] = "Original"
+            self.draw_original_training_data_figure(self.df, self.test_df)
+
+    def change_number_classify_data(self):
+        self.number_classify_data_index += 1
+        if self.number_classify_data_index >= self.data_num:
+            self.number_classify_data_index = 0
+        num_str = ""
+        num_list = self.predict_result["output_list"][self.number_classify_data_index]["input"]
+        for i in range(5):
+            for j in range(5):
+                num_str += str(int(num_list[ 5*i + j ]))
+            num_str += "\n"
+        self.number_classify_data_label["text"] = num_str
+        self.number_classify_label["text"] = "數字辨識結果： " + str(self.category_map[self.predict_result["output_list"][self.number_classify_data_index]["predict"]]) + "\n 實際值： " + str(self.category_map[self.predict_result["output_list"][self.number_classify_data_index]["expect"]])
 
     def select_file(self):
         try:
@@ -244,10 +293,12 @@ class Application(tk.Frame):
         category_list = np.arange(0, 1, 1/(category_num - 1) ).tolist()
         category_list.append(1.0)
         i = 0
+        self.category_map = {}
         for origin_label in label_set:
+            self.category_map[category_list[i]] = origin_label
             df.loc[df[len(df.columns)-1] == origin_label ,len(df.columns)-1] = category_list[i]
             i += 1
-        print(df)
+
         # split traning data and testing data
         train_df=df.sample(frac=0.666666)
         test_df=df.drop(train_df.index)
@@ -270,12 +321,12 @@ class Application(tk.Frame):
         hidden_layer_neural_num = int(self.hidden_layer_neural_num_spinbox.get())
 
         # run training and show result
-        n = MLP(train_X, train_y, learning_rate, category_num, hidden_layer_num, hidden_layer_neural_num)
+        mlp = MLP(train_X, train_y, learning_rate, category_num, hidden_layer_num, hidden_layer_neural_num)
         train_result_list = []
         print("### training start ###")
         for i in range(int(self.epoch_spinbox.get())):
             self.training_epoch_text_label["text"] = i + 1
-            train_result = n.train()
+            train_result = mlp.train()
             train_result_list.append(train_result)
             #self.draw_training_data_figure(df, test_df, train_result_list[len(train_result_list)-1])
             if train_result["acc"] > float(self.early_stop_spinbox.get()):
@@ -290,13 +341,25 @@ class Application(tk.Frame):
         
         # run testing and show result
         print("### predict start ###")
-        test_result = n.test(test_X, test_y)
+        test_result = mlp.test(test_X, test_y)
         print("### predict end ###")
 
         self.testing_acc_text_label["text"] = test_result["acc"]
 
-        # draw training data and predict line
-        self.draw_training_data_figure(df, test_df, train_result_list[len(train_result_list)-1])
+        # draw training data and create predict df
+        self.df = df
+        self.test_df = test_df
+        self.draw_original_training_data_figure(self.df, self.test_df)
+        predict_df = df.copy()
+        predict_dfs = np.split(predict_df, [len(predict_df.columns)-1], axis=1)
+        predict_X_df = predict_dfs[0]
+        predict_y_df = predict_dfs[1]
+        predict_X = predict_X_df.values.tolist()
+        predict_y = predict_y_df.values.reshape(-1,).tolist()
+        predict_result = mlp.test(predict_X, predict_y)
+        self.predict_result = predict_result
+        self.data_num = len(predict_result["output_list"])
+        # self.draw_predict_training_data_figure(self.predict_result, self.test_df)
 
 
 root = tk.Tk()

@@ -150,7 +150,7 @@ class MLP():
             forward_propagation_output = []
             for neural in self.output_layer:
                 neural.X = previous_layer_output
-                neural.D = self.D[i]
+                neural.D = y[i]
                 forward_propagation_output.append(neural.calculate_Y())
             predict = self.output_to_category(forward_propagation_output[0])
             output = {
